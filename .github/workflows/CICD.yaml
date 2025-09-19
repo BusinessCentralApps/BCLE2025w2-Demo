@@ -24,7 +24,7 @@ env:
   ALGoOrgSettings: ${{ vars.ALGoOrgSettings }}
   ALGoRepoSettings: ${{ vars.ALGoRepoSettings }}
 
-jobs:
+jobs:          
   Initialization:
     needs: [ ]
     runs-on: [ windows-latest ]
@@ -171,9 +171,25 @@ jobs:
           templateUrl: ${{ env.templateUrl }}
           token: ${{ fromJson(steps.ReadSecrets.outputs.Secrets).ghTokenWorkflow }}
           downloadLatest: true
-
+          
+  CustomJob-PreBuildValidation:
+    name: Pre-build Validation
+    runs-on: windows-latest
+    steps:
+      - name: Read settings
+        uses: microsoft/AL-Go-Actions/ReadSettings@v7.3
+        with:
+          shell: powershell
+          get: country
+  
+      - name: Run Validation
+        env:
+          _country: ${{ env.country }}
+        run: |
+          Write-Host "Running pre-build validation for country $($env:_country)..."
+          
   Build:
-    needs: [ Initialization ]
+    needs: [ Initialization, CustomJob-PreBuildValidation ]
     if: (!failure()) && (!cancelled()) && fromJson(needs.Initialization.outputs.buildOrderJson)[0].projectsCount > 0
     strategy:
       matrix:
